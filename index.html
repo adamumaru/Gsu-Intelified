@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GSU IntelliFind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'primary-green': '#087F5B',
+              'primary-gold': '#D4A017',
+              'deep-navy': '#0F1C2E',
+              'soft-mint': '#C8F3E1',
+              'warm-gray': '#F5F4F2',
+              'gsu-blue': '#0F1C2E', // Remapped to deep-navy
+              'gsu-gold': '#D4A017',   // Remapped to primary-gold
+            },
+            borderRadius: {
+                'xl': '12px',
+                '2xl': '16px',
+                '3xl': '20px',
+                'pill': '9999px',
+            },
+            boxShadow: {
+                'soft': '0 4px 12px rgba(0,0,0,0.08)',
+                'soft-lg': '0 8px 24px rgba(0,0,0,0.1)',
+            },
+            fontFamily: {
+               sans: ['Inter', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <style>
+        /* For Webkit-based browsers (Chrome, Safari) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            dark:background: #2d3748;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .fade-enter {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        .fade-enter-active {
+          opacity: 1;
+          transform: translateY(0);
+          transition: opacity 300ms, transform 300ms;
+        }
+        .fade-exit {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .fade-exit-active {
+          opacity: 0;
+          transform: translateY(-10px);
+          transition: opacity 300ms, transform 300ms;
+        }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-warm-gray dark:bg-gray-900">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
