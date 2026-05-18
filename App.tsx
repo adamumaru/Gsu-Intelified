@@ -33,6 +33,7 @@ const AppContent: React.FC = () => {
   const [foundItems, setFoundItems] = useState<Item[]>([]);
   const [leaderboard, setLeaderboard] = useState<Omit<User, 'email' | 'matricNumber' | 'role' | 'qrcodes'>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [theme, setTheme] = useState<Theme>('light');
   
   // State for Safe Call Modal
@@ -69,6 +70,9 @@ const AppContent: React.FC = () => {
           setAuthState('authenticated');
         }
       }
+      setIsSessionLoading(false);
+    }).catch(() => {
+      setIsSessionLoading(false);
     });
 
     // Listen to real-time auth state changes
@@ -84,6 +88,7 @@ const AppContent: React.FC = () => {
         setCurrentUser(null);
         setAuthState('unauthenticated');
       }
+      setIsSessionLoading(false);
     });
 
     return () => {
@@ -166,7 +171,8 @@ const AppContent: React.FC = () => {
       case 'admin':
         return <AdminView allItems={[...lostItems, ...foundItems]}/>;
       case 'profile':
-        return <ProfileView user={currentUser!} leaderboard={leaderboard} onBack={() => setView('dashboard')} />;
+        const userItems = [...lostItems, ...foundItems].filter(item => item.userId === currentUser?.id);
+        return <ProfileView user={currentUser!} leaderboard={leaderboard} userItems={userItems} onBack={() => setView('dashboard')} />;
       case 'map':
         return <MapView />;
       case 'dashboard':
@@ -183,6 +189,14 @@ const AppContent: React.FC = () => {
     }
   };
   
+  if (isSessionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-warm-gray dark:bg-gray-900">
+        <Spinner />
+      </div>
+    );
+  }
+
   if (authState === 'unauthenticated') {
     return <AuthView onLoginSuccess={handleLoginSuccess} />
   }

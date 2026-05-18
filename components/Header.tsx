@@ -52,11 +52,24 @@ const LanguageSwitcher: React.FC = () => {
 
 export const Header: React.FC<HeaderProps> = ({ user, setView, onLogout, theme, toggleTheme }) => {
   const { t } = useLocalization();
+  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
+  const logoutRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+        if (logoutRef.current && !logoutRef.current.contains(event.target as Node)) {
+            setShowConfirmLogout(false);
+        }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <header className="bg-deep-navy shadow-soft-lg sticky top-0 z-50">
       <div className="container mx-auto px-4 md:px-6 py-3 flex justify-between items-center">
         <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setView('dashboard')}>
-            <svg className="w-10 h-10 text-primary-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+            <img src="/favicon.png" className="w-10 h-10 object-contain rounded-xl" alt="GSU IntelliFind Logo" />
             <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
               {t('appTitle')}
             </h1>
@@ -72,19 +85,39 @@ export const Header: React.FC<HeaderProps> = ({ user, setView, onLogout, theme, 
              {theme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
           {user && (
-            <div className="flex items-center space-x-3 pl-3 border-l border-gray-600">
+            <div ref={logoutRef} className="flex items-center space-x-3 pl-3 border-l border-gray-600 relative">
                 <div onClick={() => setView('profile')} className="flex items-center space-x-3 cursor-pointer">
-                    <div className="text-right hidden sm:block">
-                      <p className="text-white font-semibold leading-tight">{user.name}</p>
-                      <p className="text-gray-400 text-xs leading-tight">{user.role}</p>
+                    <div className="text-right hidden sm:block font-sans">
+                      <p className="text-white font-semibold leading-tight text-sm">{user.name}</p>
+                      <p className="text-gray-400 text-xs leading-tight capitalize">{user.role}</p>
                     </div>
                     <div className="w-10 h-10 bg-primary-gold rounded-full flex items-center justify-center text-deep-navy font-bold text-lg">
                         {user.name.charAt(0)}
                     </div>
                 </div>
-                <button onClick={onLogout} className="text-white hover:text-primary-gold" aria-label="Logout">
+                <button onClick={() => setShowConfirmLogout(!showConfirmLogout)} className="text-white hover:text-primary-gold" aria-label="Logout">
                   <LogoutIcon />
                 </button>
+
+                {showConfirmLogout && (
+                  <div className="absolute right-0 top-12 mt-2 w-64 bg-white dark:bg-deep-navy rounded-2xl shadow-soft-lg p-4 z-50 border border-gray-200 dark:border-gray-700 animate-fade-in-down">
+                    <p className="text-sm font-semibold text-deep-navy dark:text-white mb-3">Are you sure you want to log out?</p>
+                    <div className="flex justify-end space-x-2">
+                      <button 
+                        onClick={() => setShowConfirmLogout(false)} 
+                        className="px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-warm-gray rounded-pill transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={() => { setShowConfirmLogout(false); onLogout(); }} 
+                        className="px-4 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-pill transition-transform transform hover:scale-105"
+                      >
+                        Log Out
+                      </button>
+                    </div>
+                  </div>
+                )}
             </div>
           )}
         </nav>
@@ -107,4 +140,4 @@ const LogoutIcon: React.FC = () => (
 
 const GlobeIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h8a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.707 4.293l.243-.243a2 2 0 012.828 0l.486.486a2 2 0 002.828 0l.243-.243m-4.243 12.072V19a2 2 0 002 2h2a2 2 0 002-2v-2.072M12 12c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0 0a4.006 4.006 0 00-2.06 7.272M12 12a4.006 4.006 0 012.06 7.272" /></svg>
-)
+);
