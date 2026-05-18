@@ -15,7 +15,7 @@ export const CAMPUS_LOCATIONS: string[] = [
 
 export const mockUser: User = {
   id: 'user_123',
-  name: 'Adam umaru',
+  name: 'Maryam',
   email: 'adamumaru57@gmail.com',
   matricNumber: '001234567',
   role: 'student',
@@ -27,7 +27,7 @@ export const mockUser: User = {
 };
 
 export const mockLeaderboard: Omit<User, 'email' | 'matricNumber' | 'role' | 'qrcodes'>[] = [
-  { id: 'user_123', name: 'Adam umaru', score: 150, badges: ['Campus Hero', 'Good Samaritan']},
+  { id: 'user_123', name: 'Maryam', score: 150, badges: ['Campus Hero', 'Good Samaritan']},
   { id: 'user_456', name: 'Jane Doe', score: 125, badges: ['Top Finder']},
   { id: 'user_789', name: 'John Smith', score: 90, badges: ['Good Samaritan']},
   { id: 'user_101', name: 'Ada Lovelace', score: 75, badges: []},
