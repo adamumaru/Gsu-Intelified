@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Item } from '../types';
 import { geminiService } from '../services/geminiService';
+import { mockApiService } from '../services/mockApiService';
 import { mockHotspots } from '../constants';
 
 interface AdminViewProps {
@@ -32,8 +33,24 @@ export const AdminView: React.FC<AdminViewProps> = ({ allItems }) => {
     }
   }
 
-  const toggleApproval = (itemId: string) => {
-    setItems(prevItems => prevItems.map(i => i.id === itemId ? { ...i, isApproved: !i.isApproved } : i));
+  const toggleApproval = async (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (item) {
+        const newApprovalState = !item.isApproved;
+        const success = await mockApiService.updateItemApproval(itemId, newApprovalState);
+        if (success) {
+            setItems(prevItems => prevItems.map(i => i.id === itemId ? { ...i, isApproved: newApprovalState } : i));
+        }
+    }
+  }
+
+  const rejectItem = async (itemId: string) => {
+      const confirmed = window.confirm("Are you sure you want to reject and delete this report?");
+      if (!confirmed) return;
+      const success = await mockApiService.deleteItem(itemId);
+      if (success) {
+          setItems(prevItems => prevItems.filter(i => i.id !== itemId));
+      }
   }
   
   const filteredItems = items.filter(item => {
@@ -51,7 +68,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ allItems }) => {
       </div>
       <div className="space-y-4">
         {filteredItems.length > 0 ? filteredItems.map(item => (
-            <AdminItemCard key={item.id} item={item} onAnalyze={getAiAnalysis} onApprove={toggleApproval} />
+            <AdminItemCard key={item.id} item={item} onAnalyze={getAiAnalysis} onApprove={toggleApproval} onReject={rejectItem} />
         )) : <p className="text-gray-500 dark:text-gray-400">No items match the current filter.</p>}
       </div>
     </>
@@ -60,9 +77,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ allItems }) => {
   const renderDashboard = () => (
     <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard title="Total Reports" value={allItems.length} />
-            <StatCard title="Pending Approval" value={allItems.filter(i => !i.isApproved).length} />
-            <StatCard title="Recovered Items" value={allItems.filter(i => i.status === 'claimed').length} />
+            <StatCard title="Total Reports" value={items.length} />
+            <StatCard title="Pending Approval" value={items.filter(i => !i.isApproved).length} />
+            <StatCard title="Recovered Items" value={items.filter(i => i.status === 'claimed').length} />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl">
@@ -85,7 +102,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ allItems }) => {
   );
 
   return (
-    <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft-lg">
+    <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft-lg transition-colors duration-300">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-3xl font-bold text-deep-navy dark:text-white">Admin Panel</h2>
          <div className="flex bg-gray-200 dark:bg-gray-700 rounded-pill p-1">
@@ -120,7 +137,7 @@ const FilterButton: React.FC<{label: string, isActive: boolean, onClick: () => v
     </button>
 );
 
-const AdminItemCard: React.FC<{item: AdminItem, onAnalyze: (id: string) => void, onApprove: (id: string) => void}> = ({item, onAnalyze, onApprove}) => {
+const AdminItemCard: React.FC<{item: AdminItem, onAnalyze: (id: string) => void, onApprove: (id: string) => void, onReject: (id: string) => void}> = ({item, onAnalyze, onApprove, onReject}) => {
     const suspicionColor = item.aiAnalysis && item.aiAnalysis.suspicionLevel > 5 ? 'text-red-500' : item.aiAnalysis && item.aiAnalysis.suspicionLevel > 2 ? 'text-yellow-500' : 'text-green-500';
     
     return (
@@ -161,7 +178,7 @@ const AdminItemCard: React.FC<{item: AdminItem, onAnalyze: (id: string) => void,
             <div className="md:col-span-1 flex flex-col items-start md:items-end justify-between h-full">
                 <p className="text-sm text-gray-500">Reported on: {new Date(item.date).toLocaleDateString()}</p>
                 <div className="flex space-x-2 mt-2">
-                    <button className="px-4 py-2 bg-red-600 text-white rounded-pill text-sm font-semibold hover:bg-red-700">Reject</button>
+                    <button onClick={() => onReject(item.id)} className="px-4 py-2 bg-red-600 text-white rounded-pill text-sm font-semibold hover:bg-red-700">Reject</button>
                     <button onClick={() => onApprove(item.id)} className={`px-4 py-2 rounded-pill text-sm font-semibold text-white ${item.isApproved ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-600 hover:bg-green-700'}`}>
                         {item.isApproved ? 'Un-approve' : 'Approve'}
                     </button>

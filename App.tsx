@@ -8,11 +8,11 @@ import { AuthView } from './components/AuthView';
 import { ProfileView } from './components/ProfileView';
 import { MapView } from './components/MapView';
 import type { Item, User, Match } from './types';
-import { mockLeaderboard } from './constants';
 import { mockApiService } from './services/mockApiService';
 import { locales } from './locales';
 import { useLocalization } from './hooks/useLocalization';
 import { SafeCallModal } from './components/SafeCallModal';
+import { supabase } from './services/supabaseClient';
 
 type View = 'dashboard' | 'reportLost' | 'reportFound' | 'admin' | 'profile' | 'map';
 type AuthState = 'unauthenticated' | 'authenticated';
@@ -31,6 +31,7 @@ const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [lostItems, setLostItems] = useState<Item[]>([]);
   const [foundItems, setFoundItems] = useState<Item[]>([]);
+  const [leaderboard, setLeaderboard] = useState<Omit<User, 'email' | 'matricNumber' | 'role' | 'qrcodes'>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [theme, setTheme] = useState<Theme>('light');
   
@@ -56,24 +57,69 @@ const AppContent: React.FC = () => {
     window.localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Supabase Session and Auth Listener
+  useEffect(() => {
+    // Check for active session on load
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const profile = await mockApiService.getUserProfile(session.user.id);
+        if (profile) {
+          profile.email = session.user.email || '';
+          setCurrentUser(profile);
+          setAuthState('authenticated');
+        }
+      }
+    });
+
+    // Listen to real-time auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const profile = await mockApiService.getUserProfile(session.user.id);
+        if (profile) {
+          profile.email = session.user.email || '';
+          setCurrentUser(profile);
+          setAuthState('authenticated');
+        }
+      } else {
+        setCurrentUser(null);
+        setAuthState('unauthenticated');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const loadData = async () => {
     setIsLoading(true);
     const fetchedLostItems = await mockApiService.getLostItems();
     const fetchedFoundItems = await mockApiService.getFoundItems();
+    const fetchedLeaderboard = await mockApiService.getLeaderboard();
     setLostItems(fetchedLostItems);
     setFoundItems(fetchedFoundItems);
+    setLeaderboard(fetchedLeaderboard);
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    if (authState === 'authenticated') {
+      loadData();
+    }
+  }, [authState]);
   
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
     setAuthState('authenticated');
-    loadData();
   };
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    setIsLoading(true);
+    await supabase.auth.signOut();
     setCurrentUser(null);
     setAuthState('unauthenticated');
+    setView('dashboard');
+    setIsLoading(false);
   }
 
   const handleItemReported = (item: Item) => {
@@ -83,21 +129,24 @@ const AppContent: React.FC = () => {
       setFoundItems(prev => [item, ...prev]);
     }
     setView('dashboard');
+    loadData(); // Reload all data to keep it fully synced with the DB
   };
   
   const handleInitiateCall = (match: Match) => {
-    // In a real app, you'd distinguish between owner and finder
     const counterpartName = currentUser?.id === match.ownerId ? match.finderName : match.ownerName;
     const counterpartRole = currentUser?.id === match.ownerId ? 'finder' : 'owner';
     setCallCounterpart({ name: counterpartName, role: counterpartRole });
     setCallStatus('ringing');
-    mockApiService.initiateCall(match.id).then(() => {
+    mockApiService.initiateCall(match.id).then((callRes) => {
       setCallStatus('connected');
+      // Store current call ID on window for simulator references
+      (window as any).currentCallId = callRes.callId;
     });
   }
   
   const handleEndCall = () => {
-    mockApiService.endCall('call_123'); // a real app would use a dynamic call ID
+    const callId = (window as any).currentCallId || 'call_fallback';
+    mockApiService.endCall(callId);
     setCallStatus('ended');
     setTimeout(() => {
         setCallStatus('idle');
@@ -117,7 +166,7 @@ const AppContent: React.FC = () => {
       case 'admin':
         return <AdminView allItems={[...lostItems, ...foundItems]}/>;
       case 'profile':
-        return <ProfileView user={currentUser!} leaderboard={mockLeaderboard} onBack={() => setView('dashboard')} />;
+        return <ProfileView user={currentUser!} leaderboard={leaderboard} onBack={() => setView('dashboard')} />;
       case 'map':
         return <MapView />;
       case 'dashboard':

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import type { User, Badge } from '../types';
+import type { User, Badge, Item } from '../types';
 
 interface ProfileViewProps {
   user: User;
   leaderboard: Omit<User, 'email' | 'matricNumber' | 'role' | 'qrcodes'>[];
+  userItems: Item[];
   onBack: () => void;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ user, leaderboard, onBack }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ user, leaderboard, userItems, onBack }) => {
     const [selectedItemId, setSelectedItemId] = useState('');
     const qrCodeUrl = selectedItemId 
         ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=GSU-ITEM-${selectedItemId}` 
@@ -25,20 +26,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, leaderboard, onB
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Profile & Gamification */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft flex items-center space-x-6">
+          <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft flex items-center space-x-6 transition-colors duration-300">
              <div className="w-24 h-24 bg-primary-gold rounded-full flex items-center justify-center text-deep-navy font-bold text-5xl flex-shrink-0">
                 {user.name.charAt(0)}
             </div>
             <div>
                 <h3 className="text-2xl font-bold">{user.name}</h3>
-                <p className="text-gray-500 dark:text-gray-400">{user.email}</p>
+                <p className="text-gray-500 dark:text-gray-400">{user.email || 'student@gsu.edu'}</p>
                 <div className="mt-2 text-primary-green dark:text-primary-gold font-bold text-lg">
                     Score: {user.score}
                 </div>
             </div>
           </div>
           
-           <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft">
+           <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft transition-colors duration-300">
               <h3 className="font-bold text-xl mb-4">Your Badges</h3>
               <div className="flex flex-wrap gap-4">
                 {user.badges.map(badge => <BadgeChip key={badge} badge={badge} />)}
@@ -46,35 +47,41 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, leaderboard, onB
               </div>
            </div>
 
-           <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft">
+           <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft transition-colors duration-300">
               <h3 className="font-bold text-xl mb-4">Generate QR Item Tag</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Generate a unique QR code to stick on your valuable items. If someone finds it, they can scan it to securely notify you.</p>
                <div className="flex flex-col sm:flex-row items-center gap-4">
                     <select
                         value={selectedItemId}
                         onChange={(e) => setSelectedItemId(e.target.value)}
-                        className="flex-grow w-full sm:w-auto bg-warm-gray dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-pill px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-green"
+                        className="flex-grow w-full sm:w-auto bg-warm-gray dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-pill px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-green text-gray-900 dark:text-white"
                     >
                        <option value="">Select an item to tag...</option>
-                       {/* In a real app, this would be the user's actual items */}
-                       <option value="item_laptop_123">Macbook Pro 14"</option>
-                       <option value="item_keys_456">Apartment Keys</option>
-                       <option value="item_bottle_789">Hydro Flask</option>
+                       {userItems.map(item => (
+                           <option key={item.id} value={item.id}>{item.name} ({item.status === 'lost' ? 'Lost' : item.status === 'found' ? 'Found' : 'Recovered'})</option>
+                       ))}
+                       {userItems.length === 0 && (
+                           <>
+                               <option value="item_laptop_123">Macbook Pro 14"</option>
+                               <option value="item_keys_456">Apartment Keys</option>
+                               <option value="item_bottle_789">Hydro Flask</option>
+                           </>
+                       )}
                     </select>
-                    <button disabled={!selectedItemId} className="px-6 py-2 bg-primary-green text-white rounded-pill font-semibold disabled:bg-gray-400 w-full sm:w-auto">Generate</button>
+                    <button disabled={!selectedItemId} className="px-6 py-2 bg-primary-green text-white rounded-pill font-semibold disabled:bg-gray-400 w-full sm:w-auto transition-transform hover:scale-105 active:scale-95 disabled:hover:scale-100">Generate</button>
                </div>
                {qrCodeUrl && (
                     <div className="mt-6 text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl">
                         <h4 className="font-bold">Your Unique QR Code</h4>
-                        <img src={qrCodeUrl} alt="Generated QR Code" className="mx-auto my-4 rounded-xl" />
-                        <button className="px-4 py-2 bg-primary-gold text-deep-navy rounded-pill font-semibold">Print Label</button>
+                        <img src={qrCodeUrl} alt="Generated QR Code" className="mx-auto my-4 rounded-xl shadow-md bg-white p-2" />
+                        <button className="px-4 py-2 bg-primary-gold text-deep-navy rounded-pill font-semibold transition-transform hover:scale-105 active:scale-95">Print Label</button>
                     </div>
                )}
            </div>
         </div>
 
         {/* Right Column: Leaderboard */}
-        <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft">
+        <div className="bg-white dark:bg-deep-navy p-6 rounded-2xl shadow-soft transition-colors duration-300">
             <h3 className="font-bold text-xl mb-4">Campus Leaderboard</h3>
             <ul className="space-y-3">
                 {leaderboard.map((player, index) => (
